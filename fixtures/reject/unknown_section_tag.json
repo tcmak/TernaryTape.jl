@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_UNKNOWN_TAG",
+  "expected": "reject",
+  "fixture": "reject/unknown_section_tag.ttape",
+  "reader_profile": "core",
+  "reason": "Section carries unrecognized tag 0x0099 outside 0x0001..0x0007.",
+  "vtpe_error_code": "VTPE_ERR_UNKNOWN_TAG"
+}

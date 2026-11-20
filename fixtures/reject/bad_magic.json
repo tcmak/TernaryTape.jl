@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_BAD_MAGIC",
+  "expected": "reject",
+  "fixture": "reject/bad_magic.ttape",
+  "reader_profile": "core",
+  "reason": "Header magic is 'VOBJ' instead of 'TTAP' (0x50415454).",
+  "vtpe_error_code": "VTPE_ERR_BAD_MAGIC"
+}

@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_MISSING_REQUIRED_SECTION",
+  "expected": "reject",
+  "fixture": "reject/missing_required_section.ttape",
+  "reader_profile": "extended",
+  "reason": "Non-core profile flag (bit 2 = 1) is set without section 0x0006 or 0x0007.",
+  "vtpe_error_code": "VTPE_ERR_MISSING_REQUIRED_SECTION"
+}

@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_MALFORMED_GROUP_SCALES",
+  "expected": "reject",
+  "fixture": "reject/invalid_group_size.ttape",
+  "reader_profile": "grouped",
+  "reason": "Section 0x0006 (group_scales_u16) declares group_size=32 outside allowlist {64, 128, 256}.",
+  "vtpe_error_code": "VTPE_ERR_MALFORMED_GROUP_SCALES"
+}

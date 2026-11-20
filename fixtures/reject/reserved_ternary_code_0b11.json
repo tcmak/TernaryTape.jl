@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_RESERVED_TERNARY_CODE",
+  "expected": "reject",
+  "fixture": "reject/reserved_ternary_code_0b11.ttape",
+  "reader_profile": "core",
+  "reason": "Weights section contains reserved 2-bit ternary code 0b11 in byte 0 lane 0.",
+  "vtpe_error_code": "VTPE_ERR_RESERVED_TERNARY_CODE"
+}

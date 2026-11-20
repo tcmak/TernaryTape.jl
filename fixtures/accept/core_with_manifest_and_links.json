@@ -1,0 +1,22 @@
+{
+  "artifact_id_hex": "0xf78df676d31dd3dd",
+  "byte_length": 249,
+  "error_code": "TTAPE_OK",
+  "expected": "accept",
+  "fixture": "accept/core_with_manifest_and_links.ttape",
+  "flags": "0x03",
+  "header_fnv1a_hex": "0x01a78140",
+  "reader_profile": "core",
+  "section_count": 5,
+  "spot_checks": {
+    "link_deltas": [
+      4,
+      -4
+    ],
+    "producer_id": "ternarytape.jl/0.1.0",
+    "quant_algorithm": "absmean-b158-pot",
+    "training_run_id": "run_20261118_bitnet_b158_seed042"
+  },
+  "tape_profile": "core",
+  "vtpe_error_code": "VTPE_OK"
+}

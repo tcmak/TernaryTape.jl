@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_UNKNOWN_FLAGS",
+  "expected": "reject",
+  "fixture": "reject/unknown_flags_bit3.ttape",
+  "reader_profile": "core",
+  "reason": "Reserved flag bit 3 (0x08) is set with a valid recomputed header checksum.",
+  "vtpe_error_code": "VTPE_ERR_UNKNOWN_FLAGS"
+}

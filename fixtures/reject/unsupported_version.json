@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_UNSUPPORTED_VERSION",
+  "expected": "reject",
+  "fixture": "reject/unsupported_version.ttape",
+  "reader_profile": "core",
+  "reason": "Header version_major is 2 instead of supported v1.",
+  "vtpe_error_code": "VTPE_ERR_UNSUPPORTED_VERSION"
+}

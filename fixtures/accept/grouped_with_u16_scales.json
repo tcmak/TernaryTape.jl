@@ -1,0 +1,33 @@
+{
+  "artifact_id_hex": "0x7ecbc5a862d19672",
+  "byte_length": 118,
+  "error_code": "TTAPE_OK",
+  "expected": "accept",
+  "fixture": "accept/grouped_with_u16_scales.ttape",
+  "flags": "0x04",
+  "header_fnv1a_hex": "0xcb3d5b6e",
+  "reader_profile": "grouped",
+  "section_count": 4,
+  "spot_checks": {
+    "dim_in": 6,
+    "dim_out": 1,
+    "group_size": 64,
+    "n_groups": 1,
+    "row0_weights": [
+      1,
+      -1,
+      0,
+      1,
+      -1,
+      -1
+    ],
+    "scales_u16": [
+      [
+        384
+      ]
+    ],
+    "shift": 8
+  },
+  "tape_profile": "grouped",
+  "vtpe_error_code": "VTPE_OK"
+}

@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_PROFILE_SECTION_FORBIDDEN",
+  "expected": "reject",
+  "fixture": "reject/fp32_aux_in_core_profile.ttape",
+  "reader_profile": "extended",
+  "reason": "Core-profile tape (flags bit 2 = 0) carries Extended-only section 0x0007 (fp32_aux).",
+  "vtpe_error_code": "VTPE_ERR_PROFILE_SECTION_FORBIDDEN"
+}

@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_PROFILE_SECTION_FORBIDDEN",
+  "expected": "reject",
+  "fixture": "reject/group_scales_in_core_profile.ttape",
+  "reader_profile": "grouped",
+  "reason": "Core-profile tape (flags bit 2 = 0) carries Grouped-only section 0x0006 (group_scales_u16).",
+  "vtpe_error_code": "VTPE_ERR_PROFILE_SECTION_FORBIDDEN"
+}

@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_NONZERO_PADDING",
+  "expected": "reject",
+  "fixture": "reject/nonzero_padding.ttape",
+  "reader_profile": "core",
+  "reason": "Ragged row (dim_in=3) has non-zero trailing padding lane 3 in weights section.",
+  "vtpe_error_code": "VTPE_ERR_NONZERO_PADDING"
+}

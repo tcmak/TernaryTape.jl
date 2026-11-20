@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_CHECKSUM_MISMATCH",
+  "expected": "reject",
+  "fixture": "reject/bad_section_checksum.ttape",
+  "reader_profile": "core",
+  "reason": "Section 0x0001 (weights) payload_fnv1a does not match its payload bytes.",
+  "vtpe_error_code": "VTPE_ERR_CHECKSUM_MISMATCH"
+}

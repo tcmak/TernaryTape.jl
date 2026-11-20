@@ -1,0 +1,19 @@
+{
+  "artifact_id_hex": "0x7586807c4d2044b4",
+  "byte_length": 341,
+  "error_code": "TTAPE_OK",
+  "expected": "accept",
+  "fixture": "accept/extended_with_fp32_aux.ttape",
+  "flags": "0x06",
+  "header_fnv1a_hex": "0x2b6ec9a0",
+  "reader_profile": "extended",
+  "section_count": 5,
+  "spot_checks": {
+    "fp32_aux_host_only": true,
+    "fp32_aux_section_tag": "0x0007",
+    "fp32_aux_tensor_count": 2,
+    "n_layers": 3
+  },
+  "tape_profile": "extended",
+  "vtpe_error_code": "VTPE_OK"
+}

@@ -1,0 +1,8 @@
+{
+  "error_code": "TTAPE_ERR_ARTIFACT_ID_MISMATCH",
+  "expected": "reject",
+  "fixture": "reject/bad_artifact_id.ttape",
+  "reader_profile": "core",
+  "reason": "Header artifact_id FNV-1a-64 does not match framed section stream.",
+  "vtpe_error_code": "VTPE_ERR_ARTIFACT_ID_MISMATCH"
+}
