@@ -156,6 +156,19 @@ struct CustomUnsupportedLuxLayer <: LuxCore.AbstractLuxLayer end
         @test occursin("Lux = \"1\"", proj_txt)
     end
 
+    @testset "Canonical frozen spec/ttape-v1.0.md & README links" begin
+        spec_v1 = joinpath(REPO_ROOT, "spec", "ttape-v1.0.md")
+        spec_draft = joinpath(REPO_ROOT, "spec", "ttape-v1-draft.md")
+        readme_path = joinpath(REPO_ROOT, "README.md")
+        @test isfile(spec_v1)
+        @test !isfile(spec_draft)
+        spec_txt = read(spec_v1, String)
+        @test occursin("FROZEN v1.0", spec_txt)
+        readme_txt = read(readme_path, String)
+        @test occursin("ttape-v1.0.md", readme_txt)
+        @test !occursin("ttape-v1-draft.md", readme_txt)
+    end
+
     @testset "Pure-Julia FNV-1a-32 and FNV-1a-64 checksums" begin
         @test fnv1a_32(UInt8[]) === 0x811c9dc5
         @test fnv1a_64(UInt8[]) === 0xcbf29ce484222325

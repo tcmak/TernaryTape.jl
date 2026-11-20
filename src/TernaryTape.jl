@@ -5,7 +5,7 @@ using LuxCore: LuxCore
 
 export UnsupportedLayerError, export_tape, fnv1a_32, fnv1a_64, header_fnv1a_32
 
-# --- Wire Constants (spec/ttape-v1-draft.md) ---
+# --- Wire Constants (spec/ttape-v1.0.md) ---
 const TTAPE_MAGIC = UInt8['T', 'T', 'A', 'P']
 const TTAPE_VERSION_MAJOR = UInt8(1)
 const TTAPE_VERSION_MINOR = UInt8(0)
@@ -67,7 +67,7 @@ function Base.showerror(io::IO, err::UnsupportedLayerError)
     )
 end
 
-# --- Pure-Julia FNV-1a Checksums (spec/ttape-v1-draft.md §2.3) ---
+# --- Pure-Julia FNV-1a Checksums (spec/ttape-v1.0.md §2.3) ---
 
 """
     fnv1a_32(data::AbstractVector{UInt8}) -> UInt32

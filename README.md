@@ -13,7 +13,7 @@
 ```text
 TernaryTape.jl/
 ├── spec/
-│   └── ttape-v1-draft.md         # Canonical TTAPE v1.0 (Draft) binary specification
+│   └── ttape-v1.0.md             # Canonical TTAPE v1.0 (FROZEN v1.0) binary specification
 ├── fixtures/
 │   ├── generate_golden.py        # Python 3 stdlib-only deterministic fixture generator & validator
 │   ├── accept/                   # Golden valid .ttape + .json sidecars (core, grouped, extended)
@@ -35,7 +35,7 @@ TernaryTape.jl/
 
 ---
 
-## 2. `TTAPE` v1 Wire Overview (`spec/ttape-v1-draft.md`)
+## 2. `TTAPE` v1 Wire Overview ([`spec/ttape-v1.0.md`](spec/ttape-v1.0.md))
 
 * **Magic & Extension:** 4-byte ASCII `"TTAP"` (`0x50415454` little-endian), file extension `.ttape`.
 * **Framing & Integrity:**

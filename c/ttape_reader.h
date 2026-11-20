@@ -11,7 +11,7 @@ extern "C" {
 
 /* -------------------------------------------------------------------------
  * c/ttape_reader.h — Zero-Dependency ISO C99 TTAPE v1 Wire Parser/Validator
- * Canonical Spec: spec/ttape-v1-draft.md
+ * Canonical Spec: spec/ttape-v1.0.md
  * Scope: Pure wire framing, checksum, and section layout parser/validator.
  *        Not an inference runtime.
  * ------------------------------------------------------------------------- */

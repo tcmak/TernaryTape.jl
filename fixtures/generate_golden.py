@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic golden fixture generator & reference validator for TTAPE v1 (Draft).
+"""Deterministic golden fixture generator & reference validator for TTAPE v1.0.
 
 Uses ONLY Python 3 standard library modules (argparse, json, math, pathlib, struct, sys)
 so C, C++, Python, and Julia consumers can regenerate or verify fixtures with zero
@@ -15,7 +15,7 @@ import struct
 import sys
 from pathlib import Path
 
-# --- Wire Constants (spec/ttape-v1-draft.md) ---
+# --- Wire Constants (spec/ttape-v1.0.md) ---
 MAGIC = b"TTAP"  # 0x50415454 little-endian
 VERSION_MAJOR = 1
 VERSION_MINOR = 0
@@ -216,7 +216,7 @@ def build_ttape(
 
 
 def validate_ttape(blob: bytes, reader_profile: str = "extended") -> str:
-    """Reference validator implementing §4 precedence-ordered diagnostics of spec/ttape-v1-draft.md."""
+    """Reference validator implementing §4 precedence-ordered diagnostics of spec/ttape-v1.0.md."""
     if reader_profile not in ("core", "grouped", "extended"):
         raise ValueError(f"Unknown reader_profile: {reader_profile!r}")
 
@@ -1181,6 +1181,15 @@ def main() -> int:
                         p.unlink()
 
     if args.check:
+        spec_dir = fixtures_root.parent / "spec"
+        spec_v1 = spec_dir / "ttape-v1.0.md"
+        spec_draft = spec_dir / "ttape-v1-draft.md"
+        if not spec_v1.exists():
+            mismatches.append(f"missing frozen spec: {spec_v1}")
+        elif "FROZEN v1.0" not in spec_v1.read_text(encoding="utf-8"):
+            mismatches.append(f"spec header missing FROZEN v1.0 status: {spec_v1}")
+        if spec_draft.exists():
+            mismatches.append(f"stale draft spec still present: {spec_draft}")
         for sub in ("accept", "reject"):
             subdir = fixtures_root / sub
             if subdir.exists():
