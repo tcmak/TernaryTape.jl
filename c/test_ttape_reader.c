@@ -173,7 +173,7 @@ static void test_accept_and_reject_corpus(const char *fixtures_dir) {
     uint8_t buf[MAX_TAPE_BYTES];
     size_t len = 0u;
 
-    /* 1. Accept corpus (4 fixtures) */
+    /* 1. Accept corpus (5 fixtures) */
     len = load_fixture(fixtures_dir, "accept/core_minimal_dot4.ttape", buf);
     CHECK_EQ_INT(TTAPE_OK, ttape_v1_validate_tape(buf, len, TTAPE_PROFILE_CORE));
     CHECK_EQ_INT(TTAPE_OK, ttape_v1_validate_tape(buf, len, TTAPE_PROFILE_GROUPED));
@@ -210,6 +210,48 @@ static void test_accept_and_reject_corpus(const char *fixtures_dir) {
     uint16_t scale_u16 = 0u;
     CHECK_EQ_INT(1, ttape_reader_read_group_scale_u16(&gview, 0u, &scale_u16));
     CHECK_EQ_INT(0x0180, scale_u16);
+
+    len = load_fixture(fixtures_dir, "accept/lux_chain_grouped_mlp.ttape", buf);
+    CHECK_EQ_INT(TTAPE_ERR_UNSUPPORTED_PROFILE, ttape_v1_validate_tape(buf, len, TTAPE_PROFILE_CORE));
+    CHECK_EQ_INT(TTAPE_OK, ttape_v1_validate_tape(buf, len, TTAPE_PROFILE_GROUPED));
+    CHECK_EQ_INT(TTAPE_OK, ttape_v1_validate_tape(buf, len, TTAPE_PROFILE_EXTENDED));
+    struct ttape_reader mlp_r;
+    CHECK_EQ_INT(TTAPE_OK, ttape_reader_open(&mlp_r, buf, len, TTAPE_PROFILE_GROUPED));
+    CHECK_EQ_INT(TTAPE_PROFILE_GROUPED, mlp_r.profile);
+    CHECK_EQ_INT(2, mlp_r.layer_count);
+    CHECK_EQ_INT(2, mlp_r.group_scales_count);
+    struct ttape_layer_desc mlp_l0, mlp_l1;
+    CHECK_EQ_INT(1, ttape_reader_get_layer(&mlp_r, 0u, &mlp_l0));
+    CHECK_EQ_INT(TTAPE_LAYER_TERNARY_DENSE, mlp_l0.layer_kind);
+    CHECK_EQ_INT(8, mlp_l0.dim_in);
+    CHECK_EQ_INT(4, mlp_l0.dim_out);
+    CHECK_EQ_INT(3, mlp_l0.reduce_stages);
+    CHECK_EQ_INT(1, ttape_reader_get_layer(&mlp_r, 1u, &mlp_l1));
+    CHECK_EQ_INT(TTAPE_LAYER_TERNARY_DENSE, mlp_l1.layer_kind);
+    CHECK_EQ_INT(4, mlp_l1.dim_in);
+    CHECK_EQ_INT(2, mlp_l1.dim_out);
+    CHECK_EQ_INT(2, mlp_l1.reduce_stages);
+    struct ttape_group_scales_view mlp_gv0, mlp_gv1;
+    CHECK_EQ_INT(1, ttape_reader_get_group_scales(&mlp_r, 0u, &mlp_gv0));
+    CHECK_EQ_INT(0, mlp_gv0.layer_index);
+    CHECK_EQ_INT(64, mlp_gv0.group_size);
+    CHECK_EQ_INT(8, mlp_gv0.shift);
+    CHECK_EQ_INT(1, mlp_gv0.n_groups);
+    CHECK_EQ_INT(4, mlp_gv0.elem_count);
+    CHECK_EQ_INT(1, ttape_reader_read_group_scale_u16(&mlp_gv0, 0u, &scale_u16));
+    CHECK_EQ_INT(0x0180, scale_u16);
+    CHECK_EQ_INT(1, ttape_reader_read_group_scale_u16(&mlp_gv0, 3u, &scale_u16));
+    CHECK_EQ_INT(0x0200, scale_u16);
+    CHECK_EQ_INT(1, ttape_reader_get_group_scales(&mlp_r, 1u, &mlp_gv1));
+    CHECK_EQ_INT(1, mlp_gv1.layer_index);
+    CHECK_EQ_INT(64, mlp_gv1.group_size);
+    CHECK_EQ_INT(8, mlp_gv1.shift);
+    CHECK_EQ_INT(1, mlp_gv1.n_groups);
+    CHECK_EQ_INT(2, mlp_gv1.elem_count);
+    CHECK_EQ_INT(1, ttape_reader_read_group_scale_u16(&mlp_gv1, 0u, &scale_u16));
+    CHECK_EQ_INT(0x0180, scale_u16);
+    CHECK_EQ_INT(1, ttape_reader_read_group_scale_u16(&mlp_gv1, 1u, &scale_u16));
+    CHECK_EQ_INT(0x0280, scale_u16);
 
     len = load_fixture(fixtures_dir, "accept/extended_with_fp32_aux.ttape", buf);
     struct ttape_reader ext_r;
@@ -257,15 +299,16 @@ static void test_accept_and_reject_corpus(const char *fixtures_dir) {
         );
     }
 
-    /* 3. Exhaustive per-byte single-bit mutation sweep across all 4 accept fixtures */
+    /* 3. Exhaustive per-byte single-bit mutation sweep across all 5 accept fixtures */
     const char *accept_paths[] = {
         "accept/core_minimal_dot4.ttape",
         "accept/core_with_manifest_and_links.ttape",
         "accept/grouped_with_u16_scales.ttape",
+        "accept/lux_chain_grouped_mlp.ttape",
         "accept/extended_with_fp32_aux.ttape"
     };
     uint8_t mut[MAX_TAPE_BYTES];
-    for (size_t f = 0u; f < 4u; ++f) {
+    for (size_t f = 0u; f < 5u; ++f) {
         size_t alen = load_fixture(fixtures_dir, accept_paths[f], buf);
         CHECK_EQ_INT(TTAPE_OK, ttape_v1_validate_tape(buf, alen, TTAPE_PROFILE_EXTENDED));
         for (size_t idx = 0u; idx < alen; ++idx) {
@@ -336,6 +379,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "FAILED: %d check(s) failed in test_ttape_reader.\n", g_failures);
         return 1;
     }
-    printf("OK: standalone C99 ttape_reader passed all 20 golden fixtures and mutation sweeps.\n");
+    printf("OK: standalone C99 ttape_reader passed all 21 golden fixtures and mutation sweeps.\n");
     return 0;
 }

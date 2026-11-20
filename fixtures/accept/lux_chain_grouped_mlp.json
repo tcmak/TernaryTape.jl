@@ -1,0 +1,135 @@
+{
+  "artifact_id_hex": "0x6e7d985c4484e315",
+  "byte_length": 162,
+  "error_code": "TTAPE_OK",
+  "expected": "accept",
+  "expected_output_vector": [
+    21,
+    -5
+  ],
+  "fixture": "accept/lux_chain_grouped_mlp.ttape",
+  "flags": "0x04",
+  "header_fnv1a_hex": "0xdeb7f804",
+  "input_vector": [
+    4,
+    -2,
+    6,
+    -4,
+    2,
+    0,
+    -6,
+    8
+  ],
+  "reader_profile": "grouped",
+  "section_count": 4,
+  "spot_checks": {
+    "expected_output_vector": [
+      21,
+      -5
+    ],
+    "group_size": 64,
+    "hidden_vector": [
+      3,
+      -3,
+      4,
+      -8
+    ],
+    "input_vector": [
+      4,
+      -2,
+      6,
+      -4,
+      2,
+      0,
+      -6,
+      8
+    ],
+    "layer0_dim_in": 8,
+    "layer0_dim_out": 4,
+    "layer0_scales_u16": [
+      [
+        384
+      ],
+      [
+        128
+      ],
+      [
+        64
+      ],
+      [
+        512
+      ]
+    ],
+    "layer0_shift": 8,
+    "layer0_weights": [
+      [
+        1,
+        -1,
+        0,
+        1,
+        -1,
+        0,
+        1,
+        1
+      ],
+      [
+        -1,
+        1,
+        1,
+        0,
+        1,
+        -1,
+        0,
+        -1
+      ],
+      [
+        1,
+        0,
+        -1,
+        -1,
+        0,
+        1,
+        -1,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        -1,
+        1,
+        0,
+        1,
+        -1
+      ]
+    ],
+    "layer1_dim_in": 4,
+    "layer1_dim_out": 2,
+    "layer1_scales_u16": [
+      [
+        384
+      ],
+      [
+        640
+      ]
+    ],
+    "layer1_shift": 8,
+    "layer1_weights": [
+      [
+        1,
+        -1,
+        0,
+        -1
+      ],
+      [
+        -1,
+        1,
+        1,
+        0
+      ]
+    ],
+    "n_layers": 2
+  },
+  "tape_profile": "grouped",
+  "vtpe_error_code": "VTPE_OK"
+}

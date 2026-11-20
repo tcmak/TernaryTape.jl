@@ -614,6 +614,81 @@ def build_fixture_catalog() -> dict[str, tuple[bytes, dict]]:
         },
     )
 
+    # 3b. accept/lux_chain_grouped_mlp (2-layer Lux.Chain(Dense(8=>4), Dense(4=>2)), grouped G=64)
+    w_mlp_l0 = (
+        pack_trits_row([1, -1, 0, 1, -1, 0, 1, 1])
+        + pack_trits_row([-1, 1, 1, 0, 1, -1, 0, -1])
+        + pack_trits_row([1, 0, -1, -1, 0, 1, -1, 1])
+        + pack_trits_row([0, 1, 1, -1, 1, 0, 1, -1])
+    )
+    w_mlp_l1 = pack_trits_row([1, -1, 0, -1]) + pack_trits_row([-1, 1, 1, 0])
+    sc_mlp = struct.pack("<hh", -8, -8)
+    arch_mlp = make_arch_payload(
+        [
+            (LAYER_TERNARY_DENSE, 8, 4, 3, 0, 3, 64),
+            (LAYER_TERNARY_DENSE, 4, 2, 2, 0, 2, 64),
+        ]
+    )
+    grp_scales_mlp = make_group_scales_payload(
+        [
+            (0, 64, 8, 1, [0x0180, 0x0080, 0x0040, 0x0200]),
+            (1, 64, 8, 1, [0x0180, 0x0280]),
+        ]
+    )
+    bin_mlp = build_ttape(
+        flags=FLAG_NON_CORE,
+        sections=[
+            (TAG_WEIGHTS, w_mlp_l0 + w_mlp_l1),
+            (TAG_SCALES, sc_mlp),
+            (TAG_ARCH_DESCRIPTOR, arch_mlp),
+            (TAG_GROUP_SCALES_U16, grp_scales_mlp),
+        ],
+    )
+    hdr_crc_hex, art_id_hex = _header_hex_pair(bin_mlp)
+    catalog["accept/lux_chain_grouped_mlp"] = (
+        bin_mlp,
+        {
+            "artifact_id_hex": art_id_hex,
+            "byte_length": len(bin_mlp),
+            "error_code": "TTAPE_OK",
+            "expected": "accept",
+            "expected_output_vector": [21, -5],
+            "fixture": "accept/lux_chain_grouped_mlp.ttape",
+            "flags": "0x04",
+            "header_fnv1a_hex": hdr_crc_hex,
+            "input_vector": [4, -2, 6, -4, 2, 0, -6, 8],
+            "reader_profile": "grouped",
+            "section_count": 4,
+            "spot_checks": {
+                "expected_output_vector": [21, -5],
+                "group_size": 64,
+                "hidden_vector": [3, -3, 4, -8],
+                "input_vector": [4, -2, 6, -4, 2, 0, -6, 8],
+                "layer0_dim_in": 8,
+                "layer0_dim_out": 4,
+                "layer0_scales_u16": [[384], [128], [64], [512]],
+                "layer0_shift": 8,
+                "layer0_weights": [
+                    [1, -1, 0, 1, -1, 0, 1, 1],
+                    [-1, 1, 1, 0, 1, -1, 0, -1],
+                    [1, 0, -1, -1, 0, 1, -1, 1],
+                    [0, 1, 1, -1, 1, 0, 1, -1],
+                ],
+                "layer1_dim_in": 4,
+                "layer1_dim_out": 2,
+                "layer1_scales_u16": [[384], [640]],
+                "layer1_shift": 8,
+                "layer1_weights": [
+                    [1, -1, 0, -1],
+                    [-1, 1, 1, 0],
+                ],
+                "n_layers": 2,
+            },
+            "tape_profile": "grouped",
+            "vtpe_error_code": "VTPE_OK",
+        },
+    )
+
     # 4. accept/extended_with_fp32_aux (3 layers: host_embedding 2x4, rmsnorm_shift 4x4, ternary_dense 4x2)
     arch_ext = make_arch_payload(
         [

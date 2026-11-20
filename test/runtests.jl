@@ -258,6 +258,52 @@ struct CustomUnsupportedLuxLayer <: LuxCore.AbstractLuxLayer end
         blob_extended = take!(io)
         @test blob_extended == read(joinpath(FIXTURES_DIR, "accept/extended_with_fp32_aux.ttape"))
         assert_cross_validated(blob_extended; tape_profile = :extended)
+
+        # 5. lux_chain_grouped_mlp (2-layer deterministic Lux.Chain(Dense(8=>4), Dense(4=>2)))
+        mlp_model = Chain(
+            Dense(8 => 4; use_bias = false),
+            Dense(4 => 2; use_bias = false),
+        )
+        w0 = Int8[
+             1 -1  0  1 -1  0  1  1;
+            -1  1  1  0  1 -1  0 -1;
+             1  0 -1 -1  0  1 -1  1;
+             0  1  1 -1  1  0  1 -1
+        ]
+        w1 = Int8[
+             1 -1  0 -1;
+            -1  1  1  0
+        ]
+        s0 = reshape(UInt16[0x0180, 0x0080, 0x0040, 0x0200], 4, 1)
+        s1 = reshape(UInt16[0x0180, 0x0280], 2, 1)
+        ps_mlp = (layer_1 = (weight = w0,), layer_2 = (weight = w1,))
+        st_mlp = (
+            layer_1 = (group_size = 64, shift = 8, scales_u16 = s0),
+            layer_2 = (group_size = 64, shift = 8, scales_u16 = s1),
+        )
+        io = IOBuffer()
+        export_tape(io, mlp_model, ps_mlp, st_mlp; profile = :grouped, context_cap = 64)
+        blob_mlp = take!(io)
+        @test blob_mlp == read(joinpath(FIXTURES_DIR, "accept/lux_chain_grouped_mlp.ttape"))
+        assert_cross_validated(blob_mlp; tape_profile = :grouped)
+
+        # Verify sidecar deterministic integer input_vector and expected_output_vector
+        sidecar_txt = read(joinpath(FIXTURES_DIR, "accept/lux_chain_grouped_mlp.json"), String)
+        @test occursin("\"input_vector\"", sidecar_txt)
+        @test occursin("\"expected_output_vector\"", sidecar_txt)
+        x_in = Int[4, -2, 6, -4, 2, 0, -6, 8]
+        h_vec = [(Int(sum(Int.(w0[r, :]) .* x_in)) * Int(s0[r, 1])) >> 8 for r in 1:4]
+        y_vec = [(Int(sum(Int.(w1[r, :]) .* h_vec)) * Int(s1[r, 1])) >> 8 for r in 1:2]
+        @test h_vec == [3, -3, 4, -8]
+        @test y_vec == [21, -5]
+        # Verify Float32 Lux forward pass with effective group scales matches exact integer output
+        ps_mlp_eff = (
+            layer_1 = (weight = Float32.(w0) .* (Float32.(s0[:, 1]) .* 2.0f0^(-8)),),
+            layer_2 = (weight = Float32.(w1) .* (Float32.(s1[:, 1]) .* 2.0f0^(-8)),),
+        )
+        st_mlp_lux = (layer_1 = NamedTuple(), layer_2 = NamedTuple())
+        y_lux, _ = mlp_model(Float32.(x_in), ps_mlp_eff, st_mlp_lux)
+        @test y_lux == Float32[21.0, -5.0]
     end
 
     @testset "Multi-group G in {64, 128, 256}, ragged dims, nested Chain & path export" begin
