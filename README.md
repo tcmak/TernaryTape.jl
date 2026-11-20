@@ -1,14 +1,14 @@
 # TernaryTape.jl
 
-**Canonical `TTAPE` (`.ttape`) binary container specification, zero-dependency golden fixture corpus, and offline `Lux.jl` v1 model exporter.**
+**Canonical `TTAPE` (`.ttape`) binary container specification, zero-dependency golden fixture corpus, standalone ISO C99 wire parser (`c/ttape_reader.h`), and offline `Lux.jl` v1 model exporter.**
 
-`TernaryTape.jl` is the single source of truth for the wire contract connecting trained `Lux.jl` ternary models to downstream hardware and freestanding runtimes (`setun` and `veriObjC`).
+`TernaryTape.jl` has **zero external repository dependencies** and serves as the single upstream wire-format source of truth consumed via one-way HTTPS submodule by `setun`.
 
 ---
 
-## 1. Repository Layout & Ownership Boundaries
+## 1. Repository Layout & Strict One-Way DAG
 
-`spec/` and `fixtures/` sit at the repository root and have **zero Julia or PyPI dependencies**, allowing C, C++, and Python consumers (`setun`, `veriObjC`) to vendor or submodule this repository without installing Julia.
+`spec/`, `fixtures/`, and `c/` sit at the repository root and have **zero Julia or PyPI dependencies**, allowing C and Python consumers (`setun`) to submodule this repository without installing Julia.
 
 ```text
 TernaryTape.jl/
@@ -18,15 +18,18 @@ TernaryTape.jl/
 │   ├── generate_golden.py        # Python 3 stdlib-only deterministic fixture generator & validator
 │   ├── accept/                   # Golden valid .ttape + .json sidecars (core, grouped, extended)
 │   └── reject/                   # Golden negative .ttape + .json sidecars for every §4 diagnostic
+├── c/
+│   ├── ttape_reader.h            # Zero-dependency ISO C99 header-only wire parser & validator
+│   └── test_ttape_reader.c       # Standalone C99 corpus & exhaustive byte-mutation test runner
 ├── src/                          # (Phase C1.2) Julia 1.10+ / Lux v1 exporter (`export_tape`)
-└── test/                         # (Phase C1.2) Julia unit & cross-repo M0 conformance tests
+└── test/                         # (Phase C1.2) Julia unit tests
 ```
 
-| Repository | Owns (Single Source of Truth) | Strictly Forbidden From Owning |
-| :--- | :--- | :--- |
-| **`TernaryTape.jl`** | `TTAPE` binary format spec (`spec/`), stdlib Python golden fixture generator (`fixtures/`), Julia/Lux v1 exporter (`src/`) | Any C/Python/FPGA runtime, hardware register maps, or co-sim interpreters |
-| **`setun`** | Trit encoding, rounding rules, Migen RTL, LiteX SoC CSRs, synthesis reports, Python reference oracle (`setun/ref/`) | Wire format specification prose, host language compiler/runtime stacks |
-| **`veriObjC`** | Objective-C subset Clang plugin (`compiler/`), freestanding runtime (`rt/`), `vobj_v1` `RelPtr` container, `ttape` reader (`vstd/`) | Hardware RTL models, hand-written Setun CSR structs, `TTAPE` spec definitions, co-sim oracles |
+| Repository | Upstream Repo Dependencies | Owns (Single Source of Truth) | Strictly Forbidden From Owning |
+| :--- | :--- | :--- | :--- |
+| **`TernaryTape.jl`** | **None** | `TTAPE` binary format spec (`spec/`), stdlib Python golden fixture generator (`fixtures/`), pure-C99 wire parser (`c/ttape_reader.h`), Julia/Lux v1 exporter (`src/`) | Any C/Python/FPGA inference runtime, hardware register maps, or co-sim interpreters |
+| **`setun`** | `TernaryTape.jl` (`third_party/TernaryTape`) | Trit encoding, rounding rules, Migen RTL, LiteX SoC CSRs, synthesis reports, Python reference oracle (`setun/ref/`) | Wire format specification prose, host language compiler/runtime stacks |
+| **`veriObjC`** | **None** | Objective-C subset Clang plugin (`compiler/`), freestanding runtime (`rt/`), `vobj_v1` `RelPtr` container, `vstd/` (with pure-CPU fallback `ternary.h`) | `TTAPE` code/submodules, hardware RTL models, Setun CSR structs, co-sim oracles |
 
 ---
 
@@ -47,16 +50,17 @@ TernaryTape.jl/
 
 ---
 
-## 3. Verifying & Regenerating Golden Fixtures
+## 3. Verifying Golden Fixtures & Standalone C99 Parser
 
-`fixtures/generate_golden.py` uses **only the Python 3 standard library** (`argparse`, `json`, `math`, `pathlib`, `struct`, `sys`):
+Both `fixtures/generate_golden.py` (Python 3 stdlib only) and `c/ttape_reader.h` (ISO C99 `<stdint.h>`, `<stddef.h>`, `<stdbool.h>` only — a wire parser/validator, **not** an inference runtime) validate the full 20-fixture corpus and exhaustive single-bit mutation sweep:
 
 ```bash
-# Regenerate all accept/*.{ttape,json} and reject/*.{ttape,json} fixtures
-python3 fixtures/generate_golden.py
-
-# Verify on-disk fixtures are byte-identical and pass all validation + per-byte mutation checks
+# 1. Verify on-disk Python golden fixtures are byte-identical and mutation-clean
 python3 fixtures/generate_golden.py --check
+
+# 2. Compile and run the standalone ISO C99 wire parser against fixtures/
+cc -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_ttape_reader
+/tmp/test_ttape_reader fixtures
 ```
 
 ---
@@ -73,7 +77,7 @@ export_tape("model_grouped.ttape", model, ps, st; profile = :grouped)
 export_tape("model_extended.ttape", model, ps, st; profile = :extended)
 ```
 
-### Supported Layer Allowlist (`setun/ref/m0.py` Parity)
+### Supported Layer Allowlist
 * Quantized ternary `Lux.Dense` → emits 2-bit packed trits (`0x0001`), per-layer shift exponent (`0x0002`), and per-group `u16` scale mantissas (`0x0006` in `:grouped` / `:extended` profiles).
 * `Lux.RMSNorm` and embedding tables → emits host-consumed `fp32_aux` (`0x0007` in `:extended` profile).
 * Any unsupported `AbstractLuxLayer` is rejected fail-closed with a typed `UnsupportedLayerError`.

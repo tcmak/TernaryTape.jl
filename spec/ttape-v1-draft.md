@@ -1,7 +1,7 @@
 # TernaryTape Binary Container Specification (`TTAPE` v1.0 — DRAFT)
 
-* **Status:** `DRAFT` (`spec-v0.1-draft`) — Promotes to `v1.0` (`spec/ttape-v1.0.md`, tag `spec-v1.0`) once two independent implementations (`setun` and `TernaryTape.jl` / `veriObjC`) pass full read/write conformance against the golden corpus.
-* **Canonical Owner:** `TernaryTape.jl` (`spec/` and `fixtures/`). Downstream consumers (`setun` and `veriObjC`) vendor or pin this repository and MUST NOT duplicate wire specification prose.
+* **Status:** `DRAFT` (`spec-v0.2-draft`) — Promotes to `v1.0` (`spec/ttape-v1.0.md`, tag `spec-v1.0`) once two independent implementations (`setun` and `TernaryTape.jl`) pass full read/write conformance against the golden corpus.
+* **Canonical Owner:** `TernaryTape.jl` (`spec/`, `fixtures/`, and the standalone C99 wire parser `c/ttape_reader.h`). Downstream consumers (`setun`) submodule or pin this repository and MUST NOT duplicate wire specification prose.
 * **File Extension:** `.ttape`
 * **Endianness:** Little-endian (`<`) for all multi-byte integers and IEEE-754 floating-point values. Position-independent (zero raw pointers).
 

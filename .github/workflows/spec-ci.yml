@@ -16,3 +16,9 @@ jobs:
           python-version: "3.12"
       - name: Verify golden fixtures are reproducible byte-for-byte
         run: python3 fixtures/generate_golden.py --check
+      - name: Compile and run standalone C99 ttape_reader validator (GCC & Clang)
+        run: |
+          gcc -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_ttape_reader_gcc
+          /tmp/test_ttape_reader_gcc fixtures
+          clang -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_ttape_reader_clang
+          /tmp/test_ttape_reader_clang fixtures
