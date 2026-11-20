@@ -1,6 +1,6 @@
 # TernaryTape Binary Container Specification (`TTAPE` v1.0 — DRAFT)
 
-* **Status:** `DRAFT` (`spec-v0.2-draft`) — Promotes to `v1.0` (`spec/ttape-v1.0.md`, tag `spec-v1.0`) once two independent implementations (`setun` and `TernaryTape.jl`) pass full read/write conformance against the golden corpus.
+* **Status:** `DRAFT` (`spec-v0.3-draft`) — Promotes to `v1.0` (`spec/ttape-v1.0.md`, tag `spec-v1.0`) once two independent implementations (`setun` and `TernaryTape.jl`) pass full read/write conformance against the golden corpus.
 * **Canonical Owner:** `TernaryTape.jl` (`spec/`, `fixtures/`, and the standalone C99 wire parser `c/ttape_reader.h`). Downstream consumers (`setun`) submodule or pin this repository and MUST NOT duplicate wire specification prose.
 * **File Extension:** `.ttape`
 * **Endianness:** Little-endian (`<`) for all multi-byte integers and IEEE-754 floating-point values. Position-independent (zero raw pointers).
@@ -253,7 +253,8 @@ Generated deterministically by `python3 fixtures/generate_golden.py` (Python 3 s
 1. `core_minimal_dot4`: `TTAPE-core` (`flags = 0x00`), 1 `ternary_dense` layer (`dim_in = 4, dim_out = 2`, `scale_exp = -2`).
 2. `core_with_manifest_and_links`: `TTAPE-core` (`flags = 0x03`), adds `0x0004` (`manifest`) and `0x0005` (`link_table`).
 3. `grouped_with_u16_scales`: `TTAPE-grouped` (`flags = 0x04`), ragged `dim_in = 6, dim_out = 1` layer with `0x0006` (`group_scales_u16`, `G = 64, shift = 8, scale_u16 = 0x0180`).
-4. `extended_with_fp32_aux`: `TTAPE-extended` (`flags = 0x06`), 3-layer block (`host_embedding`, `rmsnorm_shift`, `ternary_dense`) with `0x0004` (`manifest`) and `0x0007` (`fp32_aux`).
+4. `lux_chain_grouped_mlp`: `TTAPE-grouped` (`flags = 0x04`), deterministic 2-layer `Lux.Chain(Dense(8 => 4), Dense(4 => 2))` export with `0x0006` (`group_scales_u16`, `G = 64, shift = 8`) and exact integer input/output vectors in its `.json` sidecar.
+5. `extended_with_fp32_aux`: `TTAPE-extended` (`flags = 0x06`), 3-layer block (`host_embedding`, `rmsnorm_shift`, `ternary_dense`) with `0x0004` (`manifest`) and `0x0007` (`fp32_aux`).
 
 ### 6.2 Negative Corpus (`fixtures/reject/*.ttape` + `.json`)
 1. `bad_magic` → `TTAPE_ERR_BAD_MAGIC`

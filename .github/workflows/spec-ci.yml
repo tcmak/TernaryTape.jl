@@ -14,6 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.10"
+      - uses: julia-actions/cache@v2
       - name: Verify golden fixtures are reproducible byte-for-byte
         run: python3 fixtures/generate_golden.py --check
       - name: Compile and run standalone C99 ttape_reader validator (GCC & Clang)
@@ -22,3 +26,5 @@ jobs:
           /tmp/test_ttape_reader_gcc fixtures
           clang -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_ttape_reader_clang
           /tmp/test_ttape_reader_clang fixtures
+      - name: Run standalone Julia / Lux v1 exporter test suite
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'

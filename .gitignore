@@ -1,5 +1,6 @@
 Manifest.toml
 *.cov
 *.mem
+*.swp
 __pycache__/
 *.pyc

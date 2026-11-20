@@ -21,8 +21,10 @@ TernaryTape.jl/
 ├── c/
 │   ├── ttape_reader.h            # Zero-dependency ISO C99 header-only wire parser & validator
 │   └── test_ttape_reader.c       # Standalone C99 corpus & exhaustive byte-mutation test runner
-├── src/                          # (Phase C1.2) Julia 1.10+ / Lux v1 exporter (`export_tape`)
-└── test/                         # (Phase C1.2) Julia unit tests
+├── src/
+│   └── TernaryTape.jl            # Julia 1.10+ / Lux v1 exporter (`export_tape`)
+└── test/
+    └── runtests.jl               # Cross-validated Julia, Python, and C99 test suite
 ```
 
 | Repository | Upstream Repo Dependencies | Owns (Single Source of Truth) | Strictly Forbidden From Owning |
@@ -52,7 +54,7 @@ TernaryTape.jl/
 
 ## 3. Verifying Golden Fixtures & Standalone C99 Parser
 
-Both `fixtures/generate_golden.py` (Python 3 stdlib only) and `c/ttape_reader.h` (ISO C99 `<stdint.h>`, `<stddef.h>`, `<stdbool.h>` only — a wire parser/validator, **not** an inference runtime) validate the full 20-fixture corpus and exhaustive single-bit mutation sweep:
+Both `fixtures/generate_golden.py` (Python 3 stdlib only) and `c/ttape_reader.h` (ISO C99 `<stdint.h>`, `<stddef.h>`, `<stdbool.h>` only — a wire parser/validator, **not** an inference runtime) validate the full 21-fixture corpus and exhaustive single-bit mutation sweep:
 
 ```bash
 # 1. Verify on-disk Python golden fixtures are byte-identical and mutation-clean
@@ -61,11 +63,14 @@ python3 fixtures/generate_golden.py --check
 # 2. Compile and run the standalone ISO C99 wire parser against fixtures/
 cc -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_ttape_reader
 /tmp/test_ttape_reader fixtures
+
+# 3. Run the standalone Julia / Lux v1 exporter test suite
+julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
 ---
 
-## 4. Planned Julia / `Lux.jl` v1 Exporter API (Phase C1.2)
+## 4. Julia / `Lux.jl` v1 Exporter API (`TernaryTape.export_tape`)
 
 `TernaryTape.jl` targets **`LuxCore.AbstractLuxLayer`** (Julia `1.10+`, `Lux = "1"`) and exposes `export_tape` (never the reserved keyword `export`):
 
