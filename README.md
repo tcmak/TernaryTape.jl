@@ -6,7 +6,34 @@
 
 ---
 
-## 1. Repository Layout & Strict One-Way DAG
+## 1. What Problem `TernaryTape.jl` Solves
+
+Deploying $1.58$-bit ternary models ($\{-1, 0, +1\}$) to FPGAs, microcontrollers, or deterministic C/C++ runtimes usually encounters three core friction points:
+
+* **Training-to-Hardware Coupling:** Formats like `GGUF` or `safetensors` are designed for host-side Python/C++ runtimes with dynamic metadata, floating-point dequantization, and heap allocation—forcing every FPGA or bare-metal project to write ad-hoc, unverified binary dumpers.
+* **Silent Corruption & Undefined Codes:** Packing 4 trits per byte ($2\text{ bits/trit}$) leaves `0b11` as an illegal state, and raw memory dumps lack framing or checksums—meaning a single flipped bit, truncated transfer, or mismatched profile silently corrupts inference on hardware.
+* **Cross-Language Drift:** Producers (Julia/Python) and consumers (C/RTL) frequently disagree on byte padding, group-scale alignment, or profile boundaries (`Core` vs. `Grouped` vs. `Extended` host-only `fp32_aux`).
+
+**`TernaryTape.jl`** solves this with **TTAPE v1.0** ([`spec/ttape-v1.0.md`](spec/ttape-v1.0.md))—a frozen, little-endian, pointer-free, content-addressed binary container (`FNV-1a`) backed by:
+1. A **single-header, freestanding C99 reader** (`c/ttape_reader.h`) with zero heap allocation and strict fail-closed validation.
+2. A **Julia producer & reference package** (`src/TernaryTape.jl`) supporting `Lux.Chain` grouped exports.
+3. A **21-fixture golden conformance corpus** (`fixtures/accept/` + `fixtures/reject/`) that every encoder and hardware decoder can test against.
+
+---
+
+## 2. Setup Requirements
+
+Install **only** the toolchain required for your specific role:
+
+| Role | Target Artifact / Directory | Toolchain Requirements | Dependencies |
+| :--- | :--- | :--- | :--- |
+| **C / Embedded / FPGA Consumer** | `c/ttape_reader.h` | Any **ISO C99** compiler (`gcc`, `clang`, MSVC) | Zero external libraries, zero `malloc` (`<stdint.h>`, `<stddef.h>`, `<stdbool.h>` only) |
+| **Julia Producer / ML Engineer** | `src/TernaryTape.jl` | **Julia 1.10+** | Standard `Pkg` resolution (targets `LuxCore` / `Lux` v1) |
+| **Spec / Fixture Maintainer** | `fixtures/generate_golden.py` | **Python 3.10+** | Python standard library only (no `pip` packages required) |
+
+---
+
+## 3. Repository Layout & Strict One-Way DAG
 
 `spec/`, `fixtures/`, and `c/` sit at the repository root and have **zero Julia or PyPI dependencies**, allowing C and Python consumers (`setun`) to submodule this repository without installing Julia.
 
@@ -27,6 +54,8 @@ TernaryTape.jl/
     └── runtests.jl               # Cross-validated Julia, Python, and C99 test suite
 ```
 
+### Upstream Dependency DAG
+
 | Repository | Upstream Repo Dependencies | Owns (Single Source of Truth) | Strictly Forbidden From Owning |
 | :--- | :--- | :--- | :--- |
 | **`TernaryTape.jl`** | **None** | `TTAPE` binary format spec (`spec/`), stdlib Python golden fixture generator (`fixtures/`), pure-C99 wire parser (`c/ttape_reader.h`), Julia/Lux v1 exporter (`src/`) | Any C/Python/FPGA inference runtime, hardware register maps, or co-sim interpreters |
@@ -35,7 +64,7 @@ TernaryTape.jl/
 
 ---
 
-## 2. `TTAPE` v1 Wire Overview ([`spec/ttape-v1.0.md`](spec/ttape-v1.0.md))
+## 4. `TTAPE` v1 Wire Overview ([`spec/ttape-v1.0.md`](spec/ttape-v1.0.md))
 
 * **Magic & Extension:** 4-byte ASCII `"TTAP"` (`0x50415454` little-endian), file extension `.ttape`.
 * **Framing & Integrity:**
@@ -43,34 +72,58 @@ TernaryTape.jl/
   * 12-byte inline section headers (`struct ttape_v1_section_header`) with per-section `payload_fnv1a` (`FNV-1a-32`).
 * **Distinct Section Tags (No Overloading):**
   * `0x0001` `weights` — 2-bit LSB-first ternary trits (`0b00 = 0`, `0b01 = +1`, `0b10 = -1`, `0b11 = RESERVED/reject`).
-  * `0x0002` `scales` — per-layer `s16` power-of-two shift exponents (`[-30, +30]`).
-  * `0x0003` `arch_descriptor` — layer kinds, dimensions, reduction stages (`clog2(dim_in)`), and latency/context contracts.
+  * `0x0002` `scales` — per-layer `s16` power-of-two shift exponents ($[-30, +30]$).
+  * `0x0003` `arch_descriptor` — layer kinds, dimensions, reduction stages ($\lceil\log_2(\text{dim\_in})\rceil$), and latency/context contracts.
   * `0x0004` `manifest` — optional 5-field length-prefixed provenance record.
   * `0x0005` `link_table` — optional 4-byte aligned `int32_t` self-relative offsets.
-  * `0x0006` `group_scales_u16` — per-group `u16` scale mantissas, explicit `group_size G in {64, 128, 256}`, and shared `shift` for `TTAPE-grouped` (`setun`).
+  * `0x0006` `group_scales_u16` — per-group `u16` scale mantissas, explicit group size $G \in \{64, 128, 256\}$, and shared shift for `TTAPE-grouped` (`setun`).
   * `0x0007` `fp32_aux` — host-only IEEE-754 `binary32` auxiliary tensors (embeddings, `RMSNorm`, softmax scales; `NaN`/`±Inf` rejected) for `TTAPE-extended`.
 
 ---
 
-## 3. Verifying Golden Fixtures & Standalone C99 Parser
+## 5. How to Use & Verify
 
-Both `fixtures/generate_golden.py` (Python 3 stdlib only) and `c/ttape_reader.h` (ISO C99 `<stdint.h>`, `<stddef.h>`, `<stdbool.h>` only — a wire parser/validator, **not** an inference runtime) validate the full 21-fixture corpus and exhaustive single-bit mutation sweep:
+### A. In C / C++ / Bare-Metal Firmware (Reading a `.ttape`)
+Include `c/ttape_reader.h` directly in your project:
 
+```c
+#include "ttape_reader.h"
+
+// Parse header, validate checksums, check profile bounds, and extract layer pointers
+struct ttape_v1_reader reader;
+enum ttape_v1_status status = ttape_v1_reader_init(&reader, buffer, buffer_size, TTAPE_V1_PROFILE_GROUPED);
+if (status != TTAPE_V1_OK) {
+    // Handle fail-closed validation error (e.g., TTAPE_V1_ERR_BAD_MAGIC, TTAPE_V1_ERR_RESERVED_CODE)
+}
+```
+
+To run the standalone C99 wire parser test suite against all 21 golden fixtures:
 ```bash
-# 1. Verify on-disk Python golden fixtures are byte-identical and mutation-clean
-python3 fixtures/generate_golden.py --check
-
-# 2. Compile and run the standalone ISO C99 wire parser against fixtures/
 cc -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_ttape_reader
 /tmp/test_ttape_reader fixtures
+```
 
-# 3. Run the standalone Julia / Lux v1 exporter test suite
+### B. In Julia (Exporting Models)
+Add the package to your Julia project:
+```julia
+using Pkg
+Pkg.add(url="https://github.com/tcmak/TernaryTape.jl")
+```
+
+Run the complete Julia test suite (including `Lux.Chain` grouped MLP export and fixture parity):
+```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+```
+
+### C. In Python / Fixture Maintenance
+Verify that all on-disk golden `.ttape` files match their JSON sidecars and are mutation-clean:
+```bash
+python3 fixtures/generate_golden.py --check
 ```
 
 ---
 
-## 4. Julia / `Lux.jl` v1 Exporter API (`TernaryTape.export_tape`)
+## 6. Julia / `Lux.jl` v1 Exporter API (`TernaryTape.export_tape`)
 
 `TernaryTape.jl` targets **`LuxCore.AbstractLuxLayer`** (Julia `1.10+`, `Lux = "1"`) and exposes `export_tape` (never the reserved keyword `export`):
 
@@ -83,6 +136,7 @@ export_tape("model_extended.ttape", model, ps, st; profile = :extended)
 ```
 
 ### Supported Layer Allowlist
-* Quantized ternary `Lux.Dense` → emits 2-bit packed trits (`0x0001`), per-layer shift exponent (`0x0002`), and per-group `u16` scale mantissas (`0x0006` in `:grouped` / `:extended` profiles).
-* `Lux.RMSNorm` and embedding tables → emits host-consumed `fp32_aux` (`0x0007` in `:extended` profile).
+* Quantized ternary `Lux.Dense` $\rightarrow$ emits 2-bit packed trits (`0x0001`), per-layer shift exponent (`0x0002`), and per-group `u16` scale mantissas (`0x0006` in `:grouped` / `:extended` profiles).
+* `Lux.RMSNorm` and embedding tables $\rightarrow$ emits host-consumed `fp32_aux` (`0x0007` in `:extended` profile).
 * Any unsupported `AbstractLuxLayer` is rejected fail-closed with a typed `UnsupportedLayerError`.
+
