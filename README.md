@@ -114,19 +114,68 @@ cc -std=c99 -Wall -Wextra -Wpedantic -Werror c/test_ttape_reader.c -o /tmp/test_
 
 ### B. In `veriObjC` (Freestanding Stack-Bounded Firmware & Drivers)
 
-`c/ttape_reader.h` can be directly `#include`d within `veriObjC` bare-metal firmware or driver code. Because `ttape_reader.h` performs zero heap allocations and uses standard ISO C types, `veriObjC` components can wrap `.ttape` validation inside zero-allocation, static-bounded `@nolatency` / `@pure` class methods without pulling in any Apple runtime dependencies:
+`c/ttape_reader.h` is fully compatible with `veriObjC` bare-metal firmware and drivers. Because `ttape_reader.h` performs zero heap allocations and uses standard ISO C types, `veriObjC` programs can include it directly using standard C syntax inside static-staging routines or `@nolatency` / `@pure` class methods.
 
 ```objc
-#import <veriObjC/vstd.h>
-#include "ttape_reader.h"
+#include <stdio.h>
+#include <veriobjc_runtime.h>
+#include <vstd/span.h>
+#include <ttape_reader.h>
 
-@sealed @final @class TTapeValidator
-- (bool)validateBuffer:(vspan_u8)buf @pure @nolatency {
-    struct ttape_v1_reader reader;
-    enum ttape_v1_status st = ttape_v1_reader_init(&reader, buf.ptr, buf.len, TTAPE_V1_PROFILE_GROUPED);
-    return (st == TTAPE_V1_OK);
+static uint8_t g_io_staging[65536];
+static uint8_t g_arena_backing[65536];
+
+veriobjc_cold
+static int load_and_validate_tape(const char *path, ttape_v1_profile_t profile) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return -100;
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return -101; }
+    long sz = ftell(f);
+    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return -101; }
+    if (sz <= 0 || (size_t)sz > sizeof(g_io_staging)) { fclose(f); return -102; }
+
+    /* Stage OS I/O into static memory; keep scoped arena refs inside VeriObjC */
+    size_t rd = fread(g_io_staging, 1, (size_t)sz, f);
+    fclose(f);
+    if (rd != (size_t)sz) return -104;
+
+    struct veriobjc_stack arena;
+    veriobjc_stack_init(&arena, g_arena_backing, sizeof(g_arena_backing));
+
+    int result = -105;
+    {
+        VERIOBJC_SCOPED_STACK(&arena);
+        struct ttape_v1_reader *reader = (struct ttape_v1_reader *)veriobjc_stack_alloc(
+            &arena, sizeof(struct ttape_v1_reader));
+        if (!reader) return -106;
+
+        result = (int)ttape_v1_reader_init(reader, g_io_staging, (size_t)sz, profile);
+    }
+    return result;
 }
-@end
+```
+
+#### Compilation & Verification under `veriObjC`
+
+Compile with `clang-23` using the `veriObjC` plugin and runtime headers:
+
+```bash
+PLUGIN_SO=$(find ~/veriObjC/build -name "libVeriObjCPlugin.so" | head -n 1)
+
+clang-23 -std=gnu23 -O2 -Werror -fblocks \
+  -Xclang -load -Xclang "$PLUGIN_SO" \
+  -Xclang -add-plugin -Xclang veriobjc-check \
+  -fpass-plugin="$PLUGIN_SO" \
+  -I ~/veriObjC/rt/include -I ~/veriObjC/vstd/include \
+  -isystem c \
+  firmware_loader.m -o firmware_loader
+```
+
+Symbol auditing confirms zero dynamic ObjC dispatch (`objc_msgSend`) and zero heap allocations (`malloc`/`free`):
+
+```bash
+nm firmware_loader | grep -qE "objc_msgSend|objc_msg_lookup|__objc_exec_class|_OBJC_CLASS_|[[:space:]]U[[:space:]]+malloc|[[:space:]]U[[:space:]]+free" \
+  && echo "AUDIT FAILED" || echo "AUDIT PASSED: Zero dynamic dispatch and zero heap symbols!"
 ```
 
 ### C. In Julia (Exporting Models)
