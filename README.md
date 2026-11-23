@@ -29,7 +29,7 @@ Install **only** the toolchain required for your specific role:
 | Role | Target Artifact / Directory | Toolchain Requirements | Dependencies | 
 | ----- | ----- | ----- | ----- | 
 | **C / Embedded / FPGA Consumer** | `c/ttape_reader.h` | Any **ISO C99** compiler (`gcc`, `clang`, MSVC) | Zero external libraries, zero `malloc` (`<stdint.h>`, `<stddef.h>`, `<stdbool.h>` only) | 
-| **`veriObjC` Firmware Consumer** | `c/ttape_reader.h` | `clang-23` with `libVeriObjCPlugin.so` | Zero Apple runtime / zero heap dependencies | 
+| ** Downstream `veriObjC` Firmware Consumer** | `c/ttape_reader.h` | `clang-23` with `libVeriObjCPlugin.so` | Zero Apple runtime / zero heap dependencies | 
 | **Julia Producer / ML Engineer** | `src/TernaryTape.jl` | **Julia 1.10+** | Standard `Pkg` resolution (targets `LuxCore` / `Lux` v1) | 
 | **Spec / Fixture Maintainer** | `fixtures/generate_golden.py` | **Python 3.10+** | Python standard library only (no `pip` packages required) | 
 
@@ -97,11 +97,10 @@ Include `c/ttape_reader.h` directly in your project:
 ```c
 #include "ttape_reader.h"
 
-// Parse header, validate checksums, check profile bounds, and extract layer pointers
-struct ttape_v1_reader reader;
-enum ttape_v1_status status = ttape_v1_reader_init(&reader, buffer, buffer_size, TTAPE_V1_PROFILE_GROUPED);
-if (status != TTAPE_V1_OK) {
-    // Handle fail-closed validation error (e.g., TTAPE_V1_ERR_BAD_MAGIC, TTAPE_V1_ERR_RESERVED_CODE)
+struct ttape_reader reader;
+ttape_v1_error_t st = ttape_reader_open(&reader, buffer, buffer_size, TTAPE_PROFILE_GROUPED);
+if (st != TTAPE_OK) {
+    // Handle fail-closed validation error (e.g., TTAPE_ERR_BAD_MAGIC)
 }
 ```
 
