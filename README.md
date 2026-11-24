@@ -156,18 +156,10 @@ static int load_and_validate_tape(const char *path, ttape_v1_profile_t profile) 
 
 #### Compilation & Verification under `veriObjC`
 
-Compile with `clang-23` using the `veriObjC` plugin and runtime headers:
+Compile with `veriobj-cc`:
 
 ```bash
-PLUGIN_SO=$(find ~/veriObjC/build -name "libVeriObjCPlugin.so" | head -n 1)
-
-clang-23 -std=gnu23 -O2 -Werror -fblocks \
-  -Xclang -load -Xclang "$PLUGIN_SO" \
-  -Xclang -add-plugin -Xclang veriobjc-check \
-  -fpass-plugin="$PLUGIN_SO" \
-  -I ~/veriObjC/rt/include -I ~/veriObjC/vstd/include \
-  -isystem c \
-  firmware_loader.m -o firmware_loader
+veriobjc-cc -O2 -Werror -isystem c firmware_loader.m -o firmware_loader
 ```
 
 Symbol auditing confirms zero dynamic ObjC dispatch (`objc_msgSend`) and zero heap allocations (`malloc`/`free`):
