@@ -18,7 +18,7 @@
 1. **Orient first:** Read `README.md` and `spec/` at the start of every session. Work on **one task at a time**, in the order specified by the cleanup/execution plan, unless told otherwise.
 2. **Stop on open decisions:** Wire-format changes affect downstream consumers (`setun`). If a task requires changing header offsets, section tags, checksum algorithms, or profile rules, **stop and ask**—never mutate wire semantics silently.
 3. **Atomic commits:** Commit after each satisfied acceptance criterion using the format `<task-id>: <what>`. Enforce LF line endings (`* text=auto eol=lf`).
-4. **Spec versioning discipline:** Keep the spec marked `DRAFT` until two independent implementations (`setun` and `TernaryTape.jl`) pass full read/write conformance. Tag spec releases (`spec-v*`) separately from Julia package releases.
+4. **Spec versioning discipline (`FROZEN v1.0`):** `spec/ttape-v1.0.md` (`spec-v1.0`) is **FROZEN** across four verified implementations (`TernaryTape.jl`, `c/ttape_reader.h`, `fixtures/generate_golden.py`, and `setun`). Never mutate v1.0 wire layouts, tags, checksums, or error codes in place; any incompatible wire change requires a new `spec/ttape-v2.0.md` specification and tag (`spec-v*`), tagged separately from Julia package releases.
 
 ---
 
